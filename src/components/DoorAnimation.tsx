@@ -3,14 +3,8 @@ import gsap from "gsap";
 import headphonesImg from "@/assets/products/headphones.jpg";
 
 /**
- * DoorAnimation - GSAP-powered cinematic door opening animation
- * 
- * Flow:
- * 1. Loading bar fills up
- * 2. Door appears with animated blinking eyes and floating motion
- * 3. After delay, door opens with hinge animation
- * 4. Green glow emanates from inside, featured product slides out
- * 5. Everything fades away revealing the main site
+ * DoorAnimation - Full-screen GSAP cinematic door opening
+ * The door fills the entire viewport so the user feels like they're entering it.
  */
 interface DoorAnimationProps {
   onComplete: () => void;
@@ -19,6 +13,7 @@ interface DoorAnimationProps {
 const DoorAnimation = ({ onComplete }: DoorAnimationProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const loadingBarRef = useRef<HTMLDivElement>(null);
+  const loadingWrapRef = useRef<HTMLDivElement>(null);
   const doorLeftRef = useRef<HTMLDivElement>(null);
   const doorRightRef = useRef<HTMLDivElement>(null);
   const glowRef = useRef<HTMLDivElement>(null);
@@ -36,67 +31,73 @@ const DoorAnimation = ({ onComplete }: DoorAnimationProps) => {
         width: "100%",
         duration: 1.5,
         ease: "power2.inOut",
+      });
+
+      // Fade out loading bar
+      tl.to(loadingWrapRef.current, {
+        opacity: 0,
+        duration: 0.4,
         onComplete: () => setLoadingDone(true),
       });
 
-      // Phase 2: Fade in door with floating motion
+      // Phase 2: Door fades in (already full screen)
       tl.fromTo(
         doorFrameRef.current,
-        { opacity: 0, scale: 0.9 },
-        { opacity: 1, scale: 1, duration: 0.8, ease: "power3.out" },
-        "+=0.3"
+        { opacity: 0 },
+        { opacity: 1, duration: 0.8, ease: "power3.out" },
+        "+=0.1"
       );
 
-      // Start floating animation on door
-      tl.to(doorFrameRef.current, {
-        y: -8,
-        duration: 1.5,
+      // Subtle breathing/floating on the eyes
+      tl.to(eyesRef.current, {
+        y: -5,
+        duration: 1.2,
         ease: "sine.inOut",
         yoyo: true,
         repeat: 1,
       });
 
-      // Phase 3: Door opens - both panels swing open with hinge effect
+      // Phase 3: Doors swing open — full-screen panels reveal the glow
       tl.to(doorLeftRef.current, {
-        rotateY: -110,
-        duration: 1.8,
+        rotateY: -95,
+        duration: 2,
         ease: "power3.inOut",
       }, "doorOpen");
 
       tl.to(doorRightRef.current, {
-        rotateY: 110,
-        duration: 1.8,
+        rotateY: 95,
+        duration: 2,
         ease: "power3.inOut",
       }, "doorOpen");
 
-      // Hide eyes as door opens
+      // Eyes fade as doors open
       tl.to(eyesRef.current, {
         opacity: 0,
-        duration: 0.3,
+        duration: 0.4,
       }, "doorOpen");
 
-      // Green glow expands
+      // Green glow fills screen
       tl.fromTo(
         glowRef.current,
-        { opacity: 0, scale: 0.3 },
-        { opacity: 1, scale: 2.5, duration: 1.5, ease: "power2.out" },
-        "doorOpen+=0.3"
+        { opacity: 0, scale: 0.5 },
+        { opacity: 1, scale: 3, duration: 1.8, ease: "power2.out" },
+        "doorOpen+=0.4"
       );
 
-      // Product slides out
+      // Product emerges
       tl.fromTo(
         productRef.current,
-        { opacity: 0, scale: 0.5, y: 40 },
-        { opacity: 1, scale: 1, y: 0, duration: 1, ease: "back.out(1.4)" },
-        "doorOpen+=0.6"
+        { opacity: 0, scale: 0.6, y: 60 },
+        { opacity: 1, scale: 1, y: 0, duration: 1.2, ease: "back.out(1.4)" },
+        "doorOpen+=0.8"
       );
 
-      // Phase 4: Everything fades out, reveal website
+      // Phase 4: Everything fades, reveal site
       tl.to(containerRef.current, {
         opacity: 0,
         duration: 0.8,
         ease: "power2.inOut",
-        delay: 0.8,
+        delay: 1,
         onComplete,
       });
     }, containerRef);
@@ -107,89 +108,84 @@ const DoorAnimation = ({ onComplete }: DoorAnimationProps) => {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-background"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background overflow-hidden"
     >
       {/* Loading Bar */}
-      {!loadingDone && (
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48">
-          <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
-            <div
-              ref={loadingBarRef}
-              className="h-full w-0 rounded-full bg-primary-dark"
-            />
-          </div>
-          <p className="mt-3 text-center text-sm text-muted-foreground font-body tracking-wide">
-            Loading experience...
-          </p>
+      <div ref={loadingWrapRef} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 z-20">
+        <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+          <div ref={loadingBarRef} className="h-full w-0 rounded-full bg-primary-dark" />
         </div>
-      )}
+        <p className="mt-3 text-center text-sm text-muted-foreground font-body tracking-wide">
+          Loading experience...
+        </p>
+      </div>
 
-      {/* Green Glow (behind door) */}
+      {/* Green Glow (behind door, fills screen) */}
       <div
         ref={glowRef}
-        className="absolute w-64 h-64 rounded-full opacity-0"
+        className="absolute w-[100vw] h-[100vh] rounded-full opacity-0 pointer-events-none"
         style={{
-          background: "radial-gradient(circle, hsl(120 60% 80% / 0.6), hsl(120 40% 72% / 0.2), transparent 70%)",
+          background: "radial-gradient(circle, hsl(120 60% 80% / 0.7), hsl(120 50% 72% / 0.3), transparent 70%)",
         }}
       />
 
-      {/* Door Frame */}
+      {/* Full-screen Door Frame */}
       <div
         ref={doorFrameRef}
-        className="relative opacity-0"
-        style={{ perspective: "1200px" }}
+        className="absolute inset-0 opacity-0"
+        style={{ perspective: "1500px" }}
       >
-        {/* Door structure */}
-        <div className="relative w-48 h-72 sm:w-56 sm:h-80 md:w-64 md:h-96 rounded-t-[2rem] border-2 border-primary/30 overflow-hidden"
-          style={{ transformStyle: "preserve-3d" }}
-        >
-          {/* Eyes on the door */}
-          <div ref={eyesRef} className="absolute top-[30%] left-0 right-0 flex justify-center gap-8 z-10">
-            <div className="w-5 h-7 rounded-full bg-primary-dark flex items-center justify-center animate-blink">
-              <div className="w-2 h-2 rounded-full bg-background" />
+        {/* Door surface with seam down the center */}
+        <div className="absolute inset-0" style={{ transformStyle: "preserve-3d" }}>
+
+          {/* Eyes — centered on the door */}
+          <div ref={eyesRef} className="absolute top-[32%] left-0 right-0 flex justify-center gap-16 md:gap-24 z-10">
+            <div className="w-8 h-12 md:w-10 md:h-16 rounded-full bg-primary-dark/80 flex items-center justify-center animate-blink">
+              <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-background" />
             </div>
-            <div className="w-5 h-7 rounded-full bg-primary-dark flex items-center justify-center animate-blink"
+            <div
+              className="w-8 h-12 md:w-10 md:h-16 rounded-full bg-primary-dark/80 flex items-center justify-center animate-blink"
               style={{ animationDelay: "0.15s" }}
             >
-              <div className="w-2 h-2 rounded-full bg-background" />
+              <div className="w-3 h-3 md:w-4 md:h-4 rounded-full bg-background" />
             </div>
           </div>
 
-          {/* Left Door Panel */}
+          {/* Left Door Panel — full left half of screen */}
           <div
             ref={doorLeftRef}
-            className="absolute left-0 top-0 w-1/2 h-full bg-primary/20 border-r border-primary/10"
+            className="absolute left-0 top-0 w-1/2 h-full bg-secondary border-r border-border"
             style={{ transformOrigin: "left center", backfaceVisibility: "hidden" }}
           >
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 w-2 h-8 rounded-full bg-primary-dark/40" />
-            {/* Door panel details */}
-            <div className="absolute inset-4 border border-primary/10 rounded-lg" />
+            {/* Handle */}
+            <div className="absolute right-6 md:right-10 top-1/2 -translate-y-1/2 w-2 h-16 md:h-24 rounded-full bg-primary-dark/30" />
+            {/* Panel inset detail */}
+            <div className="absolute inset-6 md:inset-12 border border-primary/10 rounded-2xl" />
+            <div className="absolute inset-10 md:inset-20 border border-primary/5 rounded-xl" />
           </div>
 
-          {/* Right Door Panel */}
+          {/* Right Door Panel — full right half of screen */}
           <div
             ref={doorRightRef}
-            className="absolute right-0 top-0 w-1/2 h-full bg-primary/20 border-l border-primary/10"
+            className="absolute right-0 top-0 w-1/2 h-full bg-secondary border-l border-border"
             style={{ transformOrigin: "right center", backfaceVisibility: "hidden" }}
           >
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 w-2 h-8 rounded-full bg-primary-dark/40" />
-            <div className="absolute inset-4 border border-primary/10 rounded-lg" />
+            {/* Handle */}
+            <div className="absolute left-6 md:left-10 top-1/2 -translate-y-1/2 w-2 h-16 md:h-24 rounded-full bg-primary-dark/30" />
+            {/* Panel inset detail */}
+            <div className="absolute inset-6 md:inset-12 border border-primary/10 rounded-2xl" />
+            <div className="absolute inset-10 md:inset-20 border border-primary/5 rounded-xl" />
           </div>
         </div>
-
-        {/* Door base */}
-        <div className="w-full h-2 bg-primary/30 rounded-b-lg" />
       </div>
 
       {/* Featured Product (revealed after door opens) */}
-      <div
-        ref={productRef}
-        className="absolute flex flex-col items-center opacity-0"
-      >
-        <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-2xl overflow-hidden shadow-card">
+      <div ref={productRef} className="absolute flex flex-col items-center opacity-0 z-10">
+        <div className="w-44 h-44 sm:w-56 sm:h-56 md:w-64 md:h-64 rounded-3xl overflow-hidden shadow-card">
           <img src={headphonesImg} alt="Featured Product" className="w-full h-full object-cover" />
         </div>
-        <p className="mt-4 font-display text-xl text-foreground">Discover Premium</p>
+        <p className="mt-6 font-display text-2xl md:text-3xl text-foreground font-bold">Discover Premium</p>
+        <p className="mt-2 text-muted-foreground font-body">Welcome to Verdant</p>
       </div>
     </div>
   );
